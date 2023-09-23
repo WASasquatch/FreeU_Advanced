@@ -66,28 +66,6 @@ def hslerp(a, b, t):
         result -= (torch.norm(b - a, dim=1, keepdim=True) / 6) * interpolation_tensor
 
     return result
-    
-def batched_slerp(a, b, t):
-    # Ensure that tensors a and b have compatible shapes
-    if a.shape != b.shape:
-        raise ValueError("Input tensors a and b must have the same shape.")
-
-    # Compute the dot product between a and b along the appropriate dimension
-    dot_product = torch.sum(a * b, dim=1)
-
-    # Clamp the dot product to ensure it's within the valid range [-1, 1]
-    dot_product = torch.clamp(dot_product, -1.0, 1.0)
-
-    # Calculate the angle between the vectors using the dot product
-    angle = torch.acos(dot_product)
-
-    # Ensure that the angle is in the range [0, pi]
-    angle = angle % (2 * torch.pi)
-
-    # Compute the SLERP interpolation
-    interpolated = (a * torch.sin((1 - t) * angle) + b * torch.sin(t * angle)) / torch.sin(angle)
-
-    return interpolated
 
 blending_modes = {
 
@@ -120,52 +98,8 @@ blending_modes = {
 
     # Simulates a brightening effect by adding tensor b to tensor a, scaled by t.
     'linear dodge': lambda a, b, t: normalize(a + b * t),
-
-    # Interpolates between tensors a and b using spherical linear interpolation (SLERP).
-    'slerp': batched_slerp,
     
 }
-
-def Fourier_filter(x, threshold, scale, scales=None, strength=1.0):
-    # FFT
-    x_freq = fft.fftn(x.float(), dim=(-2, -1))
-    x_freq = fft.fftshift(x_freq, dim=(-2, -1))
-
-    B, C, H, W = x_freq.shape
-    mask = torch.ones((B, C, H, W), device=x.device)
-
-    crow, ccol = H // 2, W // 2
-    mask[..., crow - threshold:crow + threshold, ccol - threshold:ccol + threshold] = scale
-
-    if scales is not None:
-        if isinstance(scales[0], tuple):
-            # Single-scale mode
-            for scale_params in scales:
-                if len(scale_params) == 2:
-                    scale_threshold, scale_value = scale_params
-                    scaled_scale_value = scale_value * strength
-                    scale_mask = torch.ones((B, C, H, W), device=x.device)
-                    scale_mask[..., crow - scale_threshold:crow + scale_threshold, ccol - scale_threshold:ccol + scale_threshold] = scaled_scale_value
-                    mask = mask + (scale_mask - mask) * strength
-        else:
-            # Multi-scale mode
-            for scale_params in scales:
-                if isinstance(scale_params, list):
-                    for scale_tuple in scale_params:
-                        if len(scale_tuple) == 2:
-                            scale_threshold, scale_value = scale_tuple
-                            scaled_scale_value = scale_value * strength
-                            scale_mask = torch.ones((B, C, H, W), device=x.device)
-                            scale_mask[..., crow - scale_threshold:crow + scale_threshold, ccol - scale_threshold:ccol + scale_threshold] = scaled_scale_value
-                            mask = mask + (scale_mask - mask) * strength
-
-    x_freq = x_freq * mask
-
-    # IFFT
-    x_freq = fft.ifftshift(x_freq, dim=(-2, -1))
-    x_filtered = fft.ifftn(x_freq, dim=(-2, -1)).real
-
-    return x_filtered.to(x.dtype)
 
 mscales = {
 
@@ -230,6 +164,47 @@ mscales = {
     ],
 
 }
+
+def Fourier_filter(x, threshold, scale, scales=None, strength=1.0):
+    # FFT
+    x_freq = fft.fftn(x.float(), dim=(-2, -1))
+    x_freq = fft.fftshift(x_freq, dim=(-2, -1))
+
+    B, C, H, W = x_freq.shape
+    mask = torch.ones((B, C, H, W), device=x.device)
+
+    crow, ccol = H // 2, W // 2
+    mask[..., crow - threshold:crow + threshold, ccol - threshold:ccol + threshold] = scale
+
+    if scales is not None:
+        if isinstance(scales[0], tuple):
+            # Single-scale mode
+            for scale_params in scales:
+                if len(scale_params) == 2:
+                    scale_threshold, scale_value = scale_params
+                    scaled_scale_value = scale_value * strength
+                    scale_mask = torch.ones((B, C, H, W), device=x.device)
+                    scale_mask[..., crow - scale_threshold:crow + scale_threshold, ccol - scale_threshold:ccol + scale_threshold] = scaled_scale_value
+                    mask = mask + (scale_mask - mask) * strength
+        else:
+            # Multi-scale mode
+            for scale_params in scales:
+                if isinstance(scale_params, list):
+                    for scale_tuple in scale_params:
+                        if len(scale_tuple) == 2:
+                            scale_threshold, scale_value = scale_tuple
+                            scaled_scale_value = scale_value * strength
+                            scale_mask = torch.ones((B, C, H, W), device=x.device)
+                            scale_mask[..., crow - scale_threshold:crow + scale_threshold, ccol - scale_threshold:ccol + scale_threshold] = scaled_scale_value
+                            mask = mask + (scale_mask - mask) * strength
+
+    x_freq = x_freq * mask
+
+    # IFFT
+    x_freq = fft.ifftshift(x_freq, dim=(-2, -1))
+    x_filtered = fft.ifftn(x_freq, dim=(-2, -1)).real
+
+    return x_filtered.to(x.dtype)
 
 class WAS_FreeU:
     @classmethod
