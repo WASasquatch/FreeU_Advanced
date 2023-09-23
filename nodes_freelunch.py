@@ -224,6 +224,7 @@ class WAS_FreeU:
                     "b2_mode": (list(blending_modes.keys()),),
                     "b2_blend": ("FLOAT", {"default": 1.0, "max": 100, "min": 0, "step": 0.001}),
                     "threshold": ("INT", {"default": 1.0, "max": 10, "min": 1, "step": 1}),
+                    "use_override_scales": (["false", "true"],),
                     "override_scales": ("STRING", {"default": '''# Sharpen
 # 10, 1.5''', "multiline": True}),
                 }
@@ -234,18 +235,19 @@ class WAS_FreeU:
 
     CATEGORY = "_for_testing"
 
-    def patch(self, model, multiscale_mode, multiscale_strength, b1, b2, s1, s2, b1_mode="add", b1_blend=1.0, b2_mode="add", b2_blend=1.0, threshold=1.0, override_scales=""):
+    def patch(self, model, multiscale_mode, multiscale_strength, b1, b2, s1, s2, b1_mode="add", b1_blend=1.0, b2_mode="add", b2_blend=1.0, threshold=1.0, use_override_scales="false", override_scales=""):
         def output_block_patch(h, hsp, transformer_options):
             scales_list = []
-            if override_scales.strip() != "":
-                scales_str = override_scales.strip().splitlines()
-                for line in scales_str:
-                    if not line.strip().startswith('#') and not line.strip().startswith('!') and not line.strip().startswith('//'):
-                        scale_values = line.split(',')
-                        if len(scale_values) == 2:
-                            scales_list.append((int(scale_values[0]), float(scale_values[1])))
+            if use_override_scales == "true":
+                if override_scales.strip() != "":
+                    scales_str = override_scales.strip().splitlines()
+                    for line in scales_str:
+                        if not line.strip().startswith('#') and not line.strip().startswith('!') and not line.strip().startswith('//'):
+                            scale_values = line.split(',')
+                            if len(scale_values) == 2:
+                                scales_list.append((int(scale_values[0]), float(scale_values[1])))
 
-            scales = mscales[multiscale_mode] if not scales_list else scales_list
+            scales = mscales[multiscale_mode] if use_override_scales == "false" else scales_list
 
             if h.shape[1] == 1280:
                 h_t = h[:,:640]
