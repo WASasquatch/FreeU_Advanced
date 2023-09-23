@@ -138,17 +138,26 @@ def Fourier_filter(x, threshold, scale, scales=None, strength=1.0):
     mask[..., crow - threshold:crow + threshold, ccol - threshold:ccol + threshold] = scale
 
     if scales is not None:
-        for scale_params in scales:
-            if isinstance(scale_params, tuple) and len(scale_params) == 2:
-                scale_threshold, scale_value = scale_params
-                # Apply strength to the scale_value
-                scaled_scale_value = scale_value * strength
-                scale_mask = torch.ones((B, C, H, W), device=x.device)
-                scale_mask[..., crow - scale_threshold:crow + scale_threshold, ccol - scale_threshold:ccol + scale_threshold] = scaled_scale_value
-                new_mask = mask * scale_mask
-
-    # Blend the result with the original mask based on strength
-    mask = mask + (new_mask - mask) * strength
+        if isinstance(scales[0], tuple):
+            # Single-scale mode
+            for scale_params in scales:
+                if len(scale_params) == 2:
+                    scale_threshold, scale_value = scale_params
+                    scaled_scale_value = scale_value * strength
+                    scale_mask = torch.ones((B, C, H, W), device=x.device)
+                    scale_mask[..., crow - scale_threshold:crow + scale_threshold, ccol - scale_threshold:ccol + scale_threshold] = scaled_scale_value
+                    mask = mask + (scale_mask - mask) * strength
+        else:
+            # Multi-scale mode
+            for scale_params in scales:
+                if isinstance(scale_params, list):
+                    for scale_tuple in scale_params:
+                        if len(scale_tuple) == 2:
+                            scale_threshold, scale_value = scale_tuple
+                            scaled_scale_value = scale_value * strength
+                            scale_mask = torch.ones((B, C, H, W), device=x.device)
+                            scale_mask[..., crow - scale_threshold:crow + scale_threshold, ccol - scale_threshold:ccol + scale_threshold] = scaled_scale_value
+                            mask = mask + (scale_mask - mask) * strength
 
     x_freq = x_freq * mask
 
