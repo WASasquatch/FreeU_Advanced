@@ -19,7 +19,7 @@
 - `b1_mode` (`COMBO`): Blending modes for `b1` multiplied result.
   - `['bislerp', 'colorize', 'cosine interp', 'cuberp', 'hslerp', 'inject', 'lerp', 'linear dodge', 'slerp']`
 - `b1_blend` (`FLOAT`, Default: 1.0, Range: [0.0, 100], Step: 0.001): Blending strength for `b1`.
-- `b2_mode` (`list` of `str`): Blending modes for `b2` multiplied result.
+- `b2_mode` (`COMBO`): Blending modes for `b2` multiplied result.
   - `['bislerp', 'colorize', 'cosine interp', 'cuberp', 'hslerp', 'inject', 'lerp', 'linear dodge', 'slerp']`
 - `b2_blend` (`FLOAT`, Default: 1.0, Range: [0.0, 100], Step: 0.001): Blending strength for `b2`.
 - `threshold` (`FLOAT`, Default: 1.0, Range: [0.0, 1.0], Step: 0.001): The exposed threshold value of the Fourier transform function.
