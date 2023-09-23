@@ -223,7 +223,7 @@ class WAS_FreeU:
                     "b1_blend": ("FLOAT", {"default": 1.0, "max": 100, "min": 0, "step": 0.001}),
                     "b2_mode": (list(blending_modes.keys()),),
                     "b2_blend": ("FLOAT", {"default": 1.0, "max": 100, "min": 0, "step": 0.001}),
-                    "threshold": ("FLOAT", {"default": 1.0, "max": 1.0, "min": 0, "step": 0.001}),
+                    "threshold": ("INT", {"default": 1.0, "max": 10, "min": 1, "step": 1}),
                     "override_scales": ("STRING", {"default": '''# Sharpen
 # 10, 1.5''', "multiline": True}),
                 }
@@ -243,8 +243,7 @@ class WAS_FreeU:
                     if not line.strip().startswith('#') and not line.strip().startswith('!') and not line.strip().startswith('//'):
                         scale_values = line.split(',')
                         if len(scale_values) == 2:
-                            scale_threshold, scale_value = int(scale_values[0]), float(scale_values[1])
-                            scales_list.append((scale_threshold, scale_value))
+                            scales_list.append((int(scale_values[0]), float(scale_values[1])))
 
             scales = mscales[multiscale_mode] if not scales_list else scales_list
 
