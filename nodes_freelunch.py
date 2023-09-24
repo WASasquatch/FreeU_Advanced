@@ -213,6 +213,8 @@ class WAS_FreeU:
                     "model": ("MODEL",),
                     "multiscale_mode": (list(mscales.keys()),),
                     "multiscale_strength": ("FLOAT", {"default": 1.0, "max": 1.0, "min": 0, "step": 0.001}),
+                    "slice_b1": ("INT", {"default": 640, "min": 64, "max": 1280, "step": 1}),
+                    "slice_b2": ("INT", {"default": 320, "min": 64, "max": 640, "step": 1}),
                     "b1": ("FLOAT", {"default": 1.1, "min": 0.0, "max": 10.0, "step": 0.001}),
                     "b2": ("FLOAT", {"default": 1.2, "min": 0.0, "max": 10.0, "step": 0.001}),
                     "s1": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 10.0, "step": 0.001}),
@@ -235,7 +237,7 @@ class WAS_FreeU:
 
     CATEGORY = "_for_testing"
 
-    def patch(self, model, multiscale_mode, multiscale_strength, b1, b2, s1, s2, b1_mode="add", b1_blend=1.0, b2_mode="add", b2_blend=1.0, threshold=1.0, use_override_scales="false", override_scales=""):
+    def patch(self, model, multiscale_mode, multiscale_strength, slice_b1, slice_b2, b1, b2, s1, s2, b1_mode="add", b1_blend=1.0, b2_mode="add", b2_blend=1.0, threshold=1.0, use_override_scales="false", override_scales=""):
         def output_block_patch(h, hsp, transformer_options):
             scales_list = []
             if use_override_scales == "true":
@@ -250,14 +252,14 @@ class WAS_FreeU:
             scales = mscales[multiscale_mode] if use_override_scales == "false" else scales_list
 
             if h.shape[1] == 1280:
-                h_t = h[:,:640]
+                h_t = h[:,:slice_b1]
                 h_r = h_t * b1
-                h[:,:640] = blending_modes[b1_mode](h_t, h_r, b1_blend)
+                h[:,:slice_b1] = blending_modes[b1_mode](h_t, h_r, b1_blend)
                 hsp = Fourier_filter(hsp, threshold=threshold, scale=s1, scales=scales, strength=multiscale_strength)
-            if h.shape[1] == 640:
-                h_t = h[:,:320]
-                h_r = h[:,:320] * b2
-                h[:,:320] = blending_modes[b2_mode](h_t, h_r, b2_blend)
+            if h.shape[1] == slice_b1:
+                h_t = h[:,:slice_b2]
+                h_r = h_t * b2
+                h[:,:slice_b2] = blending_modes[b2_mode](h_t, h_r, b2_blend)
                 hsp = Fourier_filter(hsp, threshold=threshold, scale=s2, scales=scales, strength=multiscale_strength)
             return h, hsp
 

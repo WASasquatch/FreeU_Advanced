@@ -9,6 +9,8 @@
 - `multiscale_mode` (`COMBO`): A list of available multiscale modes:
   - `["Default", "Bandpass", "Low-Pass", "High-Pass", "Pass-Through", "Gaussian-Blur", "Edge-Enhancement", "Sharpen", "Multi-Bandpass", "Multi-Low-Pass", "Multi-High-Pass", "Multi-Pass-Through", "Multi-Gaussian-Blur", "Multi-Edge-Enhancement", "Multi-Sharpen"]`
 - `multiscale_strength` (`FLOAT`, Default: 1.0, Range: [0.0, 1.0], Step: 0.001): Strength of scaling
+- `b1_slice` (`INT`, Default: 640, Range: [64, 1280], Step: 1): The size of the array slice for b1 operation
+- `b2_slice` (`INT`, Default: 640, Range: [64, 640], Step: 1): The size of the array slice for b2 operation
 - `b1` (`FLOAT`, Default: 1.1, Range: [0.0, 10.0], Step: 0.001): `b1`  output multiplier
 - `b2` (`FLOAT`, Default: 1.2, Range: [0.0, 10.0], Step: 0.001): `b2`  output multiplier
 - `s1` (`FLOAT`, Default: 0.9, Range: [0.0, 10.0], Step: 0.001): `s1` Fourier transform scale strength
