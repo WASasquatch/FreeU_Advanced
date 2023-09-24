@@ -1,7 +1,7 @@
 # FreeU_Advanced
  FreeU - Free Lunch, and Dinner.
  
-![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/b68e2830-9110-4497-a0a5-e5b24cc6e012)
+![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/dc04844d-347d-4232-b80b-751a95285cf9)
 
 ## Input Parameters
 
@@ -27,4 +27,5 @@
 - `threshold` (`INT`, Default: 1.0, Range: [1, 10], Step: 1): The exposed threshold value of the Fourier transform function.
 - `use_override_scales` (`COMBO`): "true", or "false" on whether to use `override_scales`
 - `override_scales` (`STRING`, Default: [Multiline String]): Override scales. Create custom scales and experiment with results.
-  - Example `10, 1.5` would create the `multiscale_mode` effect `Sharpen` 
+  - Example `10, 1.5` would create the `multiscale_mode` effect `Sharpen`
+  - You can use `#`, `//` and `!` to comment out lines. 
