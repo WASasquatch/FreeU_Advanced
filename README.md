@@ -25,4 +25,5 @@
 - `threshold` (`INT`, Default: 1.0, Range: [1, 10], Step: 1): The exposed threshold value of the Fourier transform function.
 - `use_override_scales` (`COMBO`): "true", or "false" on whether to use `override_scales`
 - `override_scales` (`STRING`, Default: [Multiline String]): Override scales. Create custom scales and experiment with results.
-  - Example `10, 1.5` would create the `multiscale_mode` effect `Sharpen` 
+  - Example `10, 1.5` would create the `multiscale_mode` effect `Sharpen`
+  - You can use `#`, `//` and `!` to comment out lines. 
