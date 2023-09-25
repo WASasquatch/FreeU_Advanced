@@ -1,11 +1,12 @@
-# FreeU_Advanced
- FreeU - Free Lunch, and Dinner.
+# FreeU Advanced Plus
+Let's say you and I grab dinner, and movie after lunch? 🌃📺😏
  
 ![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/dc04844d-347d-4232-b80b-751a95285cf9)
 
 ## Input Parameters
 
 - `model` (`MODEL`): Model to patch
+- `target_block` (`COMBO`): Which block to target; `input_block` or `output_block`
 - `multiscale_mode` (`COMBO`): A list of available multiscale modes:
   - `["Default", "Bandpass", "Low-Pass", "High-Pass", "Pass-Through", "Gaussian-Blur", "Edge-Enhancement", "Sharpen", "Multi-Bandpass", "Multi-Low-Pass", "Multi-High-Pass", "Multi-Pass-Through", "Multi-Gaussian-Blur", "Multi-Edge-Enhancement", "Multi-Sharpen"]`
 - `multiscale_strength` (`FLOAT`, Default: 1.0, Range: [0.0, 1.0], Step: 0.001): Strength of scaling
