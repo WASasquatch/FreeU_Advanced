@@ -1,5 +1,5 @@
-# FreeUAdvanced Plus
-Let's say you and I grab dinner, and a movie after lunch? 🌃📺😏
+# FreeU Advanced Plus
+Let's say you and I grab dinner, and movie after lunch? 🌃📺😏
  
 ![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/dc04844d-347d-4232-b80b-751a95285cf9)
 
