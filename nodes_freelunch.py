@@ -238,6 +238,15 @@ class WAS_FreeU:
     CATEGORY = "_for_testing"
 
     def patch(self, model, multiscale_mode, multiscale_strength, slice_b1, slice_b2, b1, b2, s1, s2, b1_mode="add", b1_blend=1.0, b2_mode="add", b2_blend=1.0, threshold=1.0, use_override_scales="false", override_scales=""):
+    
+        min_slice = 64
+        max_slice_b1 = 1280
+        max_slice_b2 = 640
+        slice_b1 = max(min(max_slice_b1, slice_b1), min_slice)
+        slice_b2 = max(min(min(slice_b1, max_slice_b2), slice_b2), min_slice)
+        
+        print(f"FreeU Plate Portions: {slice_b1} over {slice_b2}")
+        
         def output_block_patch(h, hsp, transformer_options):
             scales_list = []
             if use_override_scales == "true":
@@ -256,7 +265,8 @@ class WAS_FreeU:
                 h_r = h_t * b1
                 h[:,:slice_b1] = blending_modes[b1_mode](h_t, h_r, b1_blend)
                 hsp = Fourier_filter(hsp, threshold=threshold, scale=s1, scales=scales, strength=multiscale_strength)
-            if h.shape[1] == slice_b1:
+            if h.shape[1] == 640:
+                print("running")
                 h_t = h[:,:slice_b2]
                 h_r = h_t * b2
                 h[:,:slice_b2] = blending_modes[b2_mode](h_t, h_r, b2_blend)
