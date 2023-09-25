@@ -1,5 +1,7 @@
 # FreeU_Advanced
  FreeU - Free Lunch, and Dinner.
+
+ Psst, how about [dinner, and a movie](https://github.com/WASasquatch/FreeU_Advanced/tree/dinner_and_a_movie)?
  
 ![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/dc04844d-347d-4232-b80b-751a95285cf9)
 
