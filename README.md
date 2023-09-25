@@ -1,7 +1,11 @@
 # FreeU Advanced Plus
 Let's say you and I grab dinner, and movie after lunch? 🌃📺😏
  
-![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/dc04844d-347d-4232-b80b-751a95285cf9)
+![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/c1dc2ec9-e6a3-4d2d-bf81-697e5d5aabcb)
+
+### Exmaple of default node settings applied across blocks.
+![default_block_examples](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/d01dea23-7ad6-4b89-ba43-70412afbd75f)
+
 
 ## Input Parameters
 
