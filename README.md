@@ -5,12 +5,13 @@ Let's say you and I grab dinner, and movie after lunch? 🌃📺😏
 
 ### Exmaple of default node settings applied across blocks.
 ![default_block_examples](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/d01dea23-7ad6-4b89-ba43-70412afbd75f)
-
+![default_block_examples_2](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/489a9990-76f7-4f09-b95a-9d54f7a319db)
+![default_block_examples_3](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/3723f54b-4af8-4a09-9771-22db16328773)
 
 ## Input Parameters
 
 - `model` (`MODEL`): Model to patch
-- `target_block` (`COMBO`): Which block to target; `input_block` or `output_block`
+- `target_block` (`COMBO`): Which block to target; `input_block`, `middle_block`, and `output_block`
 - `multiscale_mode` (`COMBO`): A list of available multiscale modes:
   - `["Default", "Bandpass", "Low-Pass", "High-Pass", "Pass-Through", "Gaussian-Blur", "Edge-Enhancement", "Sharpen", "Multi-Bandpass", "Multi-Low-Pass", "Multi-High-Pass", "Multi-Pass-Through", "Multi-Gaussian-Blur", "Multi-Edge-Enhancement", "Multi-Sharpen"]`
 - `multiscale_strength` (`FLOAT`, Default: 1.0, Range: [0.0, 1.0], Step: 0.001): Strength of scaling
