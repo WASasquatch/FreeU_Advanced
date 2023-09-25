@@ -10,6 +10,7 @@ Let's say you and I grab dinner, and movie after lunch? 🌃📺😏
 ![default_block_examples_4](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/d193d3e1-0e3e-4bdd-bdda-c5a4dffa0112)
 ![default_block_examples_5](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/a2612c22-160a-41c9-b189-b2201332eb78)
 ![default_block_examples_6](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/171b0bad-1c39-420d-a30a-be11f053168a)
+![default_block_examples_7](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/32df5124-418d-418c-97ee-6b76d6bfcb6c)
 
 ## Input Parameters
 
