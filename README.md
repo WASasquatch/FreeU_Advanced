@@ -38,4 +38,17 @@ Let's say you and I grab dinner, and movie after lunch? 🌃📺😏
 - `use_override_scales` (`COMBO`): "true", or "false" on whether to use `override_scales`
 - `override_scales` (`STRING`, Default: [Multiline String]): Override scales. Create custom scales and experiment with results.
   - Example `10, 1.5` would create the `multiscale_mode` effect `Sharpen`
-  - You can use `#`, `//` and `!` to comment out lines. 
+  - You can use `#`, `//` and `!` to comment out lines.
+
+### FreeU BibTex
+ ```
+@article{Si2023FreeU,
+  author    = {Chenyang Si, Ziqi Huang, Yuming Jiang, Ziwei Liu},
+  title     = {FreeU: Free Lunch in Diffusion U-Net},
+  journal   = {arXiv},
+  year      = {2023},
+}
+```
+## :newspaper_roll: License
+
+Distributed under the MIT License. See `LICENSE` for more information.
