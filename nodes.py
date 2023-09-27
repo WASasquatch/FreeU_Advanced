@@ -335,7 +335,7 @@ class WAS_FreeU:
         scales = mscales[multiscale_mode] if use_override_scales == "false" else scales_list
         
         print(f"FreeU Plate Portions: {slice_b1} over {slice_b2}")
-        print(f"Free U Multi-Scales: {scales}")
+        print(f"FreeU Multi-Scales: {scales}")
         
         def block_patch(h, hsp, transformer_options):
             if h.shape[1] == 1280:
