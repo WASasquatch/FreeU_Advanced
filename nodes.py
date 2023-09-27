@@ -196,7 +196,6 @@ def __temp__forward(self, x, timesteps=None, context=None, y=None, control=None,
         patch = transformer_patches["middle_block_patch"]
         for p in patch:
             h, hsp = p(h, hsp, transformer_options)
-            print(h, hsp)
     del hsp
 
     for id, module in enumerate(self.output_blocks):
@@ -225,11 +224,15 @@ def __temp__forward(self, x, timesteps=None, context=None, y=None, control=None,
     else:
         return self.out(h)
 
-print("Patching openaimodel.forward")
+print("Patching UNetModel.forward")
 import comfy.ldm.modules.diffusionmodules.openaimodel
 from comfy.ldm.modules.diffusionmodules.openaimodel import forward_timestep_embed
 from  comfy.ldm.modules.diffusionmodules.util import timestep_embedding
 comfy.ldm.modules.diffusionmodules.openaimodel.UNetModel.forward = __temp__forward
+if comfy.ldm.modules.diffusionmodules.openaimodel.UNetModel.forward is __temp__forward:
+    print("UNetModel.forward has been successfully patched.")
+else:
+    print("UNetModel.forward patching failed.")
 
 def Fourier_filter(x, threshold, scale, scales=None, strength=1.0):
     # FFT
@@ -299,7 +302,9 @@ class WAS_FreeU:
                     "b2_blend": ("FLOAT", {"default": 1.0, "max": 100, "min": 0, "step": 0.001}),
                     "threshold": ("INT", {"default": 1.0, "max": 10, "min": 1, "step": 1}),
                     "use_override_scales": (["false", "true"],),
-                    "override_scales": ("STRING", {"default": '''# Sharpen
+                    "override_scales": ("STRING", {"default": '''# OVERRIDE SCALES
+
+# Sharpen
 # 10, 1.5''', "multiline": True}),
                 }
         }
@@ -317,21 +322,22 @@ class WAS_FreeU:
         slice_b1 = max(min(max_slice_b1, slice_b1), min_slice)
         slice_b2 = max(min(min(slice_b1, max_slice_b2), slice_b2), min_slice)
         
+        scales_list = []
+        if use_override_scales == "true":
+            if override_scales.strip() != "":
+                scales_str = override_scales.strip().splitlines()
+                for line in scales_str:
+                    if not line.strip().startswith('#') and not line.strip().startswith('!') and not line.strip().startswith('//'):
+                        scale_values = line.split(',')
+                        if len(scale_values) == 2:
+                            scales_list.append((int(scale_values[0]), float(scale_values[1])))
+
+        scales = mscales[multiscale_mode] if use_override_scales == "false" else scales_list
+        
         print(f"FreeU Plate Portions: {slice_b1} over {slice_b2}")
+        print(f"Free U Multi-Scales: {scales}")
         
         def block_patch(h, hsp, transformer_options):
-            scales_list = []
-            if use_override_scales == "true":
-                if override_scales.strip() != "":
-                    scales_str = override_scales.strip().splitlines()
-                    for line in scales_str:
-                        if not line.strip().startswith('#') and not line.strip().startswith('!') and not line.strip().startswith('//'):
-                            scale_values = line.split(',')
-                            if len(scale_values) == 2:
-                                scales_list.append((int(scale_values[0]), float(scale_values[1])))
-
-            scales = mscales[multiscale_mode] if use_override_scales == "false" else scales_list
-
             if h.shape[1] == 1280:
                 h_t = h[:,:slice_b1]
                 h_r = h_t * b1
@@ -344,7 +350,7 @@ class WAS_FreeU:
                 hsp = Fourier_filter(hsp, threshold=threshold, scale=s2, scales=scales, strength=multiscale_strength)
             return h, hsp
 
-        print(f"patching {target_block}")
+        print(f"Patching {target_block}")
         
         m = model.clone()
         if target_block == "output_block":
@@ -361,5 +367,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "FreeU (Advanced)": "FreeU (Advanced)",
+    "FreeU (Advanced)": "FreeU (Advanced Plus)",
 }
