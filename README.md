@@ -1,13 +1,21 @@
-# FreeU_Advanced
- FreeU - Free Lunch, and Dinner.
-
- Psst, how about [dinner, and a movie](https://github.com/WASasquatch/FreeU_Advanced/tree/dinner_and_a_movie)?
+# FreeU Advanced Plus
+Let's say you and I grab dinner, and movie after lunch? 🌃📺😏
  
-![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/dc04844d-347d-4232-b80b-751a95285cf9)
+![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/c1dc2ec9-e6a3-4d2d-bf81-697e5d5aabcb)
+
+### Exmaple of default node settings applied across blocks.
+![default_block_examples](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/d01dea23-7ad6-4b89-ba43-70412afbd75f)
+![default_block_examples_2](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/489a9990-76f7-4f09-b95a-9d54f7a319db)
+![default_block_examples_3](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/3723f54b-4af8-4a09-9771-22db16328773)
+![default_block_examples_4](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/d193d3e1-0e3e-4bdd-bdda-c5a4dffa0112)
+![default_block_examples_5](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/a2612c22-160a-41c9-b189-b2201332eb78)
+![default_block_examples_6](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/171b0bad-1c39-420d-a30a-be11f053168a)
+![default_block_examples_7](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/32df5124-418d-418c-97ee-6b76d6bfcb6c)
 
 ## Input Parameters
 
 - `model` (`MODEL`): Model to patch
+- `target_block` (`COMBO`): Which block to target; `input_block`, `middle_block`, and `output_block`
 - `multiscale_mode` (`COMBO`): A list of available multiscale modes:
   - `["Default", "Bandpass", "Low-Pass", "High-Pass", "Pass-Through", "Gaussian-Blur", "Edge-Enhancement", "Sharpen", "Multi-Bandpass", "Multi-Low-Pass", "Multi-High-Pass", "Multi-Pass-Through", "Multi-Gaussian-Blur", "Multi-Edge-Enhancement", "Multi-Sharpen"]`
 - `multiscale_strength` (`FLOAT`, Default: 1.0, Range: [0.0, 1.0], Step: 0.001): Strength of scaling
@@ -30,7 +38,7 @@
 - `use_override_scales` (`COMBO`): "true", or "false" on whether to use `override_scales`
 - `override_scales` (`STRING`, Default: [Multiline String]): Override scales. Create custom scales and experiment with results.
   - Example `10, 1.5` would create the `multiscale_mode` effect `Sharpen`
-  - You can use `#`, `//` and `!` to comment out lines. 
+  - You can use `#`, `//` and `!` to comment out lines.
 
 ### FreeU BibTex
  ```
