@@ -144,85 +144,85 @@ mscales = {
 # forward function from comfy.ldm.modules.diuffusionmodules.openaimodel
 # Hopefully temporary replacement
 def __temp__forward(self, x, timesteps=None, context=None, y=None, control=None, transformer_options={}, **kwargs):
-    """
-    Apply the model to an input batch.
-    :param x: an [N x C x ...] Tensor of inputs.
-    :param timesteps: a 1-D batch of timesteps.
-    :param context: conditioning plugged in via crossattn
-    :param y: an [N] Tensor of labels, if class-conditional.
-    :return: an [N x C x ...] Tensor of outputs.
-    """
-    transformer_options["original_shape"] = list(x.shape)
-    transformer_options["current_index"] = 0
-    transformer_patches = transformer_options.get("patches", {})
+        """
+        Apply the model to an input batch.
+        :param x: an [N x C x ...] Tensor of inputs.
+        :param timesteps: a 1-D batch of timesteps.
+        :param context: conditioning plugged in via crossattn
+        :param y: an [N] Tensor of labels, if class-conditional.
+        :return: an [N x C x ...] Tensor of outputs.
+        """
+        transformer_options["original_shape"] = list(x.shape)
+        transformer_options["current_index"] = 0
+        transformer_patches = transformer_options.get("patches", {})
 
-    assert (y is not None) == (
-        self.num_classes is not None
-    ), "must specify y if and only if the model is class-conditional"
-    hs = []
-    t_emb = timestep_embedding(timesteps, self.model_channels, repeat_only=False).to(self.dtype)
-    emb = self.time_embed(t_emb)
+        assert (y is not None) == (
+            self.num_classes is not None
+        ), "must specify y if and only if the model is class-conditional"
+        hs = []
+        t_emb = timestep_embedding(timesteps, self.model_channels, repeat_only=False).to(self.dtype)
+        emb = self.time_embed(t_emb)
 
-    if self.num_classes is not None:
-        assert y.shape[0] == x.shape[0]
-        emb = emb + self.label_emb(y)
+        if self.num_classes is not None:
+            assert y.shape[0] == x.shape[0]
+            emb = emb + self.label_emb(y)
 
-    h = x.type(self.dtype)
-    for id, module in enumerate(self.input_blocks):
-        transformer_options["block"] = ("input", id)
-        h = forward_timestep_embed(module, h, emb, context, transformer_options)
-        if control is not None and 'input' in control and len(control['input']) > 0:
-            ctrl = control['input'].pop()
+        h = x.type(self.dtype)
+        for id, module in enumerate(self.input_blocks):
+            transformer_options["block"] = ("input", id)
+            h = forward_timestep_embed(module, h, emb, context, transformer_options)
+            if control is not None and 'input' in control and len(control['input']) > 0:
+                ctrl = control['input'].pop()
+                if ctrl is not None:
+                    h += ctrl
+            hs.append(h)
+            
+            hsp = hs
+            if "input_block_patch" in transformer_patches:
+                patch = transformer_patches["input_block_patch"]
+                for p in patch:
+                    h, hsp = p(h, hsp, transformer_options)
+            del hsp
+            
+        transformer_options["block"] = ("middle", 0)
+        h = forward_timestep_embed(self.middle_block, h, emb, context, transformer_options)
+        if control is not None and 'middle' in control and len(control['middle']) > 0:
+            ctrl = control['middle'].pop()
             if ctrl is not None:
                 h += ctrl
-        hs.append(h)
-
-        hsp = hs
-        if "input_block_patch" in transformer_patches:
-            patch = transformer_patches["input_block_patch"]
+                
+        hsp = [h]
+        if "middle_block_patch" in transformer_patches:
+            patch = transformer_patches["middle_block_patch"]
             for p in patch:
                 h, hsp = p(h, hsp, transformer_options)
         del hsp
 
-    transformer_options["block"] = ("middle", 0)
-    h = forward_timestep_embed(self.middle_block, h, emb, context, transformer_options)
-    if control is not None and 'middle' in control and len(control['middle']) > 0:
-        ctrl = control['middle'].pop()
-        if ctrl is not None:
-            h += ctrl
-            
-    hsp = [h]
-    if "middle_block_patch" in transformer_patches:
-        patch = transformer_patches["middle_block_patch"]
-        for p in patch:
-            h, hsp = p(h, hsp, transformer_options)
-    del hsp
+        for id, module in enumerate(self.output_blocks):
+            transformer_options["block"] = ("output", id)
+            hsp = hs.pop()
+            if control is not None and 'output' in control and len(control['output']) > 0:
+                ctrl = control['output'].pop()
+                if ctrl is not None:
+                    hsp += ctrl
 
-    for id, module in enumerate(self.output_blocks):
-        transformer_options["block"] = ("output", id)
-        hsp = hs.pop()
-        if control is not None and 'output' in control and len(control['output']) > 0:
-            ctrl = control['output'].pop()
-            if ctrl is not None:
-                hsp += ctrl
+            if "output_block_patch" in transformer_patches:
+                patch = transformer_patches["output_block_patch"]
+                for p in patch:
+                    h, hsp = p(h, hsp, transformer_options)
 
-        if "output_block_patch" in transformer_patches:
-            patch = transformer_patches["output_block_patch"]
-            for p in patch:
-                h, hsp = p(h, hsp, transformer_options)
-
-        h = th.cat([h, hsp], dim=1)
-        del hsp
-        if len(hs) > 0:
-            output_shape = hs[-1].shape
+            h = th.cat([h, hsp], dim=1)
+            del hsp
+            if len(hs) > 0:
+                output_shape = hs[-1].shape
+            else:
+                output_shape = None
+            h = forward_timestep_embed(module, h, emb, context, transformer_options, output_shape)
+        h = h.type(x.dtype)
+        if self.predict_codebook_ids:
+            return self.id_predictor(h)
         else:
-            output_shape = None
-        h = forward_timestep_embed(module, h, emb, context, transformer_options, output_shape)
-    h = h.type(x.dtype)
-    if self.predict_codebook_ids:
-        return self.id_predictor(h)
-    else:
-        return self.out(h)
+            return self.out(h)
 
 print("Patching UNetModel.forward")
 import comfy.ldm.modules.diffusionmodules.openaimodel
@@ -331,6 +331,10 @@ class WAS_FreeU:
                         scale_values = line.split(',')
                         if len(scale_values) == 2:
                             scales_list.append((int(scale_values[0]), float(scale_values[1])))
+                            
+        if use_override_scales == "true" and not scales_list:
+            print("No valid override scales found. Using default scale.")
+            scales_list = None
 
         scales = mscales[multiscale_mode] if use_override_scales == "false" else scales_list
         
