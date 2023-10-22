@@ -285,7 +285,7 @@ class WAS_FreeU:
     def INPUT_TYPES(s):
         return {"required": { 
                     "model": ("MODEL",),
-                    "target_block": (["output_block", "middle_block", "input_block"],),
+                    "target_block": (["output_block", "middle_block", "input_block", "all"],),
                     "multiscale_mode": (list(mscales.keys()),),
                     "multiscale_strength": ("FLOAT", {"default": 1.0, "max": 1.0, "min": 0, "step": 0.001}),
                     "slice_b1": ("INT", {"default": 640, "min": 64, "max": 1280, "step": 1}),
@@ -357,11 +357,11 @@ class WAS_FreeU:
         print(f"Patching {target_block}")
         
         m = model.clone()
-        if target_block == "output_block":
+        if target_block == "all" or target_block == "output_block":
             m.set_model_output_block_patch(block_patch)
-        elif target_block == "input_block":
+        if target_block == "all" or target_block == "input_block":
             m.set_model_patch(block_patch, "input_block_patch")
-        elif target_block == "middle_block":
+        if target_block == "all" or target_block == "middle_block":
             m.set_model_patch(block_patch, "middle_block_patch")
         return (m, )
 
