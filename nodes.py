@@ -156,7 +156,7 @@ def __temp__forward(self, x, timesteps=None, context=None, y=None, control=None,
         transformer_patches = transformer_options.get("patches", {})
 
         num_video_frames = kwargs.get("num_video_frames", self.default_num_video_frames)
-        image_only_indicator = kwargs.get("image_only_indicator", self.default_image_only_indicator)
+        image_only_indicator = kwargs.get("image_only_indicator", getattr(self, "default_image_only_indicator", None))
         time_context = kwargs.get("time_context", None)
 
         assert (y is not None) == (
