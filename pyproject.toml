@@ -2,7 +2,7 @@
 name = "freeu_advanced"
 description = "This custom node provides advanced settings for FreeU."
 version = "1.0.0"
-license = "LICENSE"
+license = { file = "LICENSE" }
 
 [project.urls]
 Repository = "https://github.com/WASasquatch/FreeU_Advanced"
