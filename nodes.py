@@ -67,6 +67,39 @@ def hslerp(a, b, t):
 
     return result
 
+def stable_slerp(a, b, t: float, eps: float = 1e-6):
+    """
+    Numerically stable spherical linear interpolation over the channel dimension.
+
+    Treat each BCHW location's C-vector as a point on a hypersphere and SLERP from a->b.
+    Falls back to LERP when the angle is very small or vectors are near-zero.
+    """
+    if a.shape != b.shape:
+        raise ValueError("Input tensors a and b must have the same shape.")
+
+    # Norms across channel dimension
+    a_norm = torch.linalg.norm(a, dim=1, keepdim=True).clamp_min(eps)
+    b_norm = torch.linalg.norm(b, dim=1, keepdim=True).clamp_min(eps)
+    a_n = a / a_norm
+    b_n = b / b_norm
+
+    # Cosine of angle between vectors
+    dot = (a_n * b_n).sum(dim=1, keepdim=True).clamp(-1.0 + eps, 1.0 - eps)
+    theta = torch.acos(dot)
+    sin_theta = torch.sin(theta).clamp_min(eps)
+
+    # Scalar t is expected; keep broadcast-friendly
+    s0 = torch.sin((1.0 - t) * theta) / sin_theta
+    s1 = torch.sin(t * theta) / sin_theta
+
+    slerp_out = s0 * a + s1 * b
+    lerp_out = (1.0 - t) * a + t * b
+
+    # When angle is too small, prefer LERP to avoid instabilities
+    use_lerp = (theta < 1e-3).squeeze(1)
+    out = torch.where(use_lerp.unsqueeze(1), lerp_out, slerp_out)
+    return out
+
 blending_modes = {
     # Args:
     #   - a (tensor): Latent input 1
@@ -84,6 +117,8 @@ blending_modes = {
     # Interpolates between tensors a and b using normalized linear interpolation,
     # with a twist when t is greater than or equal to 0.5.
     'hslerp': hslerp,
+    # Numerically stable SLERP over channel vectors
+    'stable_slerp': stable_slerp,
     # Adds tensor b to tensor a, scaled by t.
     'inject': lambda a, b, t: a + b * t,
     # Interpolates between tensors a and b using linear interpolation.
