@@ -1,7 +1,7 @@
 [project]
 name = "freeu_advanced"
 description = "This custom node provides advanced settings for FreeU."
-version = "1.1.0"
+version = "1.2.0"
 license = { file = "LICENSE" }
 
 [project.urls]

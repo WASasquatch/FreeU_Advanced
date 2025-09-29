@@ -3,6 +3,7 @@
 import torch
 import torch as th
 import torch.fft as fft
+import torch.nn as nn
 import math
 
 def normalize(latent, target_min=None, target_max=None):
@@ -129,16 +130,8 @@ blending_modes = {
 
 mscales = {
     "Default": None,
-    "Bandpass": [
-        (5, 0.0),    # Low-pass filter
-        (15, 1.0),   # Pass-through filter (allows mid-range frequencies)
-        (25, 0.0),   # High-pass filter
-    ],
     "Low-Pass": [
         (10, 1.0),   # Allows low-frequency components, suppresses high-frequency components
-    ],
-    "High-Pass": [
-        (10, 0.0),   # Suppresses low-frequency components, allows high-frequency components
     ],
     "Pass-Through": [
         (10, 1.0),   # Passes all frequencies unchanged, no filtering
@@ -228,27 +221,27 @@ class WAS_FreeU:
     def INPUT_TYPES(s):
         return {"required": {
                     "model": ("MODEL",),
-                    "target_block": (["output_block", "middle_block", "input_block", "all"],),
-                    "multiscale_mode": (list(mscales.keys()),),
-                    "multiscale_strength": ("FLOAT", {"default": 1.0, "max": 1.0, "min": 0, "step": 0.001}),
-                    "slice_b1": ("INT", {"default": 640, "min": 64, "max": 1280, "step": 1}),
-                    "slice_b2": ("INT", {"default": 320, "min": 64, "max": 640, "step": 1}),
-                    "b1": ("FLOAT", {"default": 1.1, "min": 0.0, "max": 10.0, "step": 0.001}),
-                    "b2": ("FLOAT", {"default": 1.2, "min": 0.0, "max": 10.0, "step": 0.001}),
-                    "s1": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 10.0, "step": 0.001}),
-                    "s2": ("FLOAT", {"default": 0.2, "min": 0.0, "max": 10.0, "step": 0.001}),
+                    "target_block": (["output_block", "middle_block", "input_block", "all"], {"tooltip": "Which UNet block(s) to patch."}),
+                    "multiscale_mode": (list(mscales.keys()), {"tooltip": "Frequency shaping preset used by Fourier_filter."}),
+                    "multiscale_strength": ("FLOAT", {"default": 1.0, "max": 1.0, "min": 0, "step": 0.001, "tooltip": "Intensity of multi-scale shaping [0-1]."}),
+                    "slice_b1": ("INT", {"default": 640, "min": 64, "max": 1280, "step": 1, "tooltip": "Slice width (channels) affected in 1280-channel features."}),
+                    "slice_b2": ("INT", {"default": 320, "min": 64, "max": 640, "step": 1, "tooltip": "Slice width (channels) affected in 640-channel features."}),
+                    "b1": ("FLOAT", {"default": 1.1, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Gain multiplier applied to the b1 slice (1280-ch)."}),
+                    "b2": ("FLOAT", {"default": 1.2, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Gain multiplier applied to the b2 slice (640-ch)."}),
+                    "s1": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Fourier scale at threshold for 1280-ch features."}),
+                    "s2": ("FLOAT", {"default": 0.2, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Fourier scale at threshold for 640-ch features."}),
                 },
                 "optional": {
-                    "b1_mode": (list(blending_modes.keys()),),
-                    "b1_blend": ("FLOAT", {"default": 1.0, "max": 100, "min": 0, "step": 0.001}),
-                    "b2_mode": (list(blending_modes.keys()),),
-                    "b2_blend": ("FLOAT", {"default": 1.0, "max": 100, "min": 0, "step": 0.001}),
-                    "threshold": ("INT", {"default": 1.0, "max": 10, "min": 1, "step": 1}),
-                    "use_override_scales": (["false", "true"],),
+                    "b1_mode": (list(blending_modes.keys()), {"tooltip": "Blending mode for b1 path."}),
+                    "b1_blend": ("FLOAT", {"default": 1.0, "max": 100, "min": 0, "step": 0.001, "tooltip": "Blend strength for b1 path."}),
+                    "b2_mode": (list(blending_modes.keys()), {"tooltip": "Blending mode for b2 path."}),
+                    "b2_blend": ("FLOAT", {"default": 1.0, "max": 100, "min": 0, "step": 0.001, "tooltip": "Blend strength for b2 path."}),
+                    "threshold": ("INT", {"default": 1.0, "max": 10, "min": 1, "step": 1, "tooltip": "Base radius for the Fourier mask."}),
+                    "use_override_scales": (["false", "true"], {"tooltip": "Enable manual override of scale presets."}),
                     "override_scales": ("STRING", {"default": '''# OVERRIDE SCALES
 
 # Sharpen
-# 10, 1.5''', "multiline": True}),
+# 10, 1.5''', "multiline": True, "tooltip": "Custom scale lines: '<radius>, <scale>'. Comments with #,//,!"}),
                 }
         }
 
@@ -307,6 +300,7 @@ class WAS_FreeU:
         print(f"Patching {target_block}")
 
         m = model.clone()
+
         if target_block == "all" or target_block == "output_block":
             m.set_model_output_block_patch(block_patch_hsp)
         if target_block == "all" or target_block == "input_block":
@@ -315,30 +309,97 @@ class WAS_FreeU:
             m.set_model_patch(block_patch, "middle_block_patch")
         return (m, )
 
+
+
+class WAS_PostCFGShift:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+                    "model": ("MODEL",),
+                    "steps": ("INT", {"default": 20, "min": 1, "max": 1000, "step": 1, "tooltip": "Number of steps to apply SHIFT."}),
+                    "mode": (list(blending_modes.keys()), {"tooltip": "Blend strategy for denoised vs denoised*b (e.g., inject, stable_slerp)."}),
+                    "blend": ("FLOAT", {"default": 1.0, "max": 100.0, "min": 0.0, "step": 0.001, "tooltip": "Blend amount between base and scaled tensors."}),
+                    "b": ("FLOAT", {"default": 1.1, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Scale factor for the injected path (higher = stronger)."}),
+                    "apply_fourier": ("BOOLEAN", {"default": False, "tooltip": "Apply frequency-domain shaping (Fourier_filter)."}),
+                    "multiscale_mode": (list(mscales.keys()), {"tooltip": "Preset shaping curves for Fourier_filter."}),
+                    "multiscale_strength": ("FLOAT", {"default": 1.0, "max": 1.0, "min": 0.0, "step": 0.001, "tooltip": "Intensity of multi-scale shaping [0-1]."}),
+                    "threshold": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1, "tooltip": "Base radius for frequency mask."}),
+                    "s": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Base scale value applied at threshold radius."}),
+                    "force_gain": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 100.0, "step": 0.01, "tooltip": "Final multiplier to boost or attenuate effect."}),
+                }
+        }
+
+    RETURN_TYPES = ("MODEL",)
+    FUNCTION = "patch"
+
+    CATEGORY = "_for_testing"
+
+    def patch(self, model, steps, mode, blend, b, apply_fourier, multiscale_mode, multiscale_strength, threshold, s, force_gain):
+
+        scales = mscales[multiscale_mode]
+        steps = max(1, min(1000, steps))
+        current_step = 0
+
+        print(
+            "[FluxU] inputs:",
+            f"mode={mode}", f"blend={blend}", f"b={b}",
+            f"apply_fourier={apply_fourier}", f"multiscale_mode={multiscale_mode}", f"multiscale_strength={multiscale_strength}",
+            f"threshold={threshold}", f"s={s}", f"force_gain={force_gain}"
+            )
+
+        m = model.clone()
+
+        def post_cfg_function(args):
+
+            nonlocal current_step
+            current_step += 1
+            if current_step > steps:
+                return args.get("denoised")
+
+            denoised = args.get("denoised")
+            eff_blend = float(blend)
+            t_scaled = denoised * b
+            y = blending_modes[mode](denoised, t_scaled, eff_blend)
+
+            if apply_fourier:
+                y = Fourier_filter(y, threshold=threshold, scale=s, scales=scales, strength=multiscale_strength)
+
+            if force_gain != 1.0:
+                y = y * float(force_gain)
+            return y
+
+
+        try:
+            m.set_model_sampler_post_cfg_function(post_cfg_function)
+            print("[FluxU] set_model_sampler_post_cfg_function registered")
+        except Exception as e:
+            print(f"[FluxU] set_model_sampler_post_cfg_function failed: {e}")
+        return (m, )
+
 class WAS_FreeU_V2:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
                     "model": ("MODEL",),
-                    "input_block": ("BOOLEAN", {"default": False}),
-                    "middle_block": ("BOOLEAN", {"default": False}),
-                    "output_block": ("BOOLEAN", {"default": False}),
-                    "multiscale_mode": (list(mscales.keys()),),
-                    "multiscale_strength": ("FLOAT", {"default": 1.0, "max": 1.0, "min": 0, "step": 0.001}),
-                    "slice_b1": ("INT", {"default": 640, "min": 64, "max": 1280, "step": 1}),
-                    "slice_b2": ("INT", {"default": 320, "min": 64, "max": 640, "step": 1}),
-                    "b1": ("FLOAT", {"default": 1.1, "min": 0.0, "max": 10.0, "step": 0.001}),
-                    "b2": ("FLOAT", {"default": 1.2, "min": 0.0, "max": 10.0, "step": 0.001}),
-                    "s1": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 10.0, "step": 0.001}),
-                    "s2": ("FLOAT", {"default": 0.2, "min": 0.0, "max": 10.0, "step": 0.001}),
+                    "input_block": ("BOOLEAN", {"default": False, "tooltip": "Enable patching on the input block."}),
+                    "middle_block": ("BOOLEAN", {"default": False, "tooltip": "Enable patching on the middle block."}),
+                    "output_block": ("BOOLEAN", {"default": False, "tooltip": "Enable patching on the output block."}),
+                    "multiscale_mode": (list(mscales.keys()), {"tooltip": "Frequency shaping preset used by Fourier_filter."}),
+                    "multiscale_strength": ("FLOAT", {"default": 1.0, "max": 1.0, "min": 0, "step": 0.001, "tooltip": "Intensity of multi-scale shaping [0-1]."}),
+                    "slice_b1": ("INT", {"default": 640, "min": 64, "max": 1280, "step": 1, "tooltip": "Slice width (channels) affected in 1280-channel features."}),
+                    "slice_b2": ("INT", {"default": 320, "min": 64, "max": 640, "step": 1, "tooltip": "Slice width (channels) affected in 640-channel features."}),
+                    "b1": ("FLOAT", {"default": 1.1, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Gain multiplier for 1280-channel slice."}),
+                    "b2": ("FLOAT", {"default": 1.2, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Gain multiplier for 640-channel slice."}),
+                    "s1": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Fourier scale at threshold for 1280-ch features."}),
+                    "s2": ("FLOAT", {"default": 0.2, "min": 0.0, "max": 10.0, "step": 0.001, "tooltip": "Fourier scale at threshold for 640-ch features."}),
                 },
                 "optional": {
-                    "threshold": ("INT", {"default": 1.0, "max": 10, "min": 1, "step": 1}),
-                    "use_override_scales": (["false", "true"],),
+                    "threshold": ("INT", {"default": 1.0, "max": 10, "min": 1, "step": 1, "tooltip": "Base radius for the Fourier mask."}),
+                    "use_override_scales": (["false", "true"], {"tooltip": "Enable manual override of scale presets."}),
                     "override_scales": ("STRING", {"default": '''# OVERRIDE SCALES
 
 # Sharpen
-# 10, 1.5''', "multiline": True}),
+# 10, 1.5''', "multiline": True, "tooltip": "Custom scale lines: '<radius>, <scale>'. Comments with #,//,!"}),
                 }
         }
 
@@ -410,11 +471,14 @@ class WAS_FreeU_V2:
         return (m, )
 
 NODE_CLASS_MAPPINGS = {
-    "FreeU (Advanced)": WAS_FreeU,
-    "FreeU_V2 (Advanced)": WAS_FreeU_V2,
+    "WAS_FreeU": WAS_FreeU,
+    "WAS_FreeU_V2": WAS_FreeU_V2,
+    "WAS_PostCFGShift": WAS_PostCFGShift,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "FreeU (Advanced)": "FreeU (Advanced Plus)",
-    "FreeU_V2 (Advanced)": "FreeU V2 (Advanced Plus)",
+    "WAS_FreeU": "FreeU (Advanced Plus)",
+    "WAS_FreeU_V2": "FreeU V2 (Advanced Plus)",
+    "WAS_PostCFGShift": "Post-CFG SHIFT",
 }
+

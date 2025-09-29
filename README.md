@@ -1,4 +1,4 @@
-# FreeU Advanced Plus
+# FreeU Advanced Plus (And Post-CFG SHIFT)
 Let's say you and I grab dinner, and movie after lunch? 🌃📺😏
  
 ![image](https://github.com/WASasquatch/FreeU_Advanced/assets/1151589/c1dc2ec9-e6a3-4d2d-bf81-697e5d5aabcb)
@@ -52,3 +52,36 @@ Let's say you and I grab dinner, and movie after lunch? 🌃📺😏
 ## :newspaper_roll: License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## Post-CFG SHIFT (Flux)
+
+Post-CFG Stepwise Hybrid Inject + Fourier Tuning.
+
+- Runs after classifier-free guidance (CFG) merges cond/uncond each sampler step.
+- Modifies the sampler’s current denoised tensor (in VAE latent space in typical pipelines), not model weights.
+- Applies a hybrid blend between the denoised tensor and a scaled version, with optional frequency-domain shaping.
+
+### How it works
+1) Model predicts noise; CFG produces a denoised tensor for the current step.
+2) SHIFT blends `denoised` with `denoised * b` using the chosen `mode` and `blend`.
+3) Optionally applies `Fourier_filter` with per-scale controls.
+4) Applies a final `force_gain` multiplier.
+
+### Parameters
+- `mode` (combo): Blend strategy for `denoised` vs `denoised*b`.
+  - Useful: `inject` (strong), `stable_slerp` (smooth), `lerp` (linear), etc.
+- `blend` (float): Blend amount between base and scaled tensors.
+- `b` (float): Scale factor for the injected path. Higher = stronger effect.
+- `apply_fourier` (bool): Enable frequency-domain shaping.
+- `multiscale_mode` (combo): Preset shaping curves. Use stable options (e.g., Default, Pass-Through, Sharpen).
+- `multiscale_strength` (float): Intensity of multi-scale shaping.
+- `threshold` (int): Base radius in frequency mask.
+- `s` (float): Base scale value applied at `threshold` radius.
+- `force_gain` (float): Final multiplier to boost or attenuate the overall effect.
+- `debug_log` (bool): Prints one-time registration and periodic fire logs.
+
+### Notes
+- SHIFT is always-on in Flux; attention/forward-timestep/wrapper paths are disabled for stability.
+- If a multiscale preset yields flat/gray output, switch to a stable preset (e.g., Sharpen, Pass-Through) or tune `threshold`/`s`.
